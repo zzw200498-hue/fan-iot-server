@@ -23,6 +23,18 @@
 
 msg_queue_t g_queue;
 
+/*
+ * 信号处理：Ctrl+C(SIGINT) 或 kill(SIGTERM) 时只做两件
+ * 异步信号安全的事——置停止标志、关监听 fd（close 是安全的），
+ * 让两个阻塞中的线程自己醒来，清理工作留在 main 的正常流程里做。
+ */
+static void on_stop_signal(int sig)
+{
+    (void)sig;
+    tcp_server_stop();
+    http_server_stop();
+}
+
 static void print_usage(const char *prog)
 {
     printf("用法: %s [tcp端口] [http端口] [数据库文件]\n", prog);
@@ -55,6 +67,13 @@ int main(int argc, char **argv)
 
     /* SIGPIPE：向已断开的 socket 写数据时默认会杀死进程，必须忽略 */
     signal(SIGPIPE, SIG_IGN);
+
+    /* Ctrl+C / kill：触发优雅退出而不是被默认行为直接杀死 */
+    struct sigaction sa;
+    memset(&sa, 0, sizeof(sa));
+    sa.sa_handler = on_stop_signal;
+    sigaction(SIGINT, &sa, NULL);
+    sigaction(SIGTERM, &sa, NULL);
 
     msg_queue_init(&g_queue);
 
