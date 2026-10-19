@@ -33,7 +33,7 @@ void *worker_thread(void *arg)
 
         int ok_temp = json_get_double(msg, "temp", &temp);
         int ok_humi = json_get_double(msg, "humi", &humi);
-        int ok_fan = json_get_int(msg, "fan", &fan);
+        json_get_int(msg, "fan", &fan);     /* fan 解析失败就保持 0，不阻塞入库 */
 
         if (ok_temp == 0 || ok_humi == 0)
         {

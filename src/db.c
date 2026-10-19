@@ -48,6 +48,16 @@ int db_open(const char *path)
     return 0;
 }
 
+void db_close(void)
+{
+    if (g_db != NULL)
+    {
+        sqlite3_close(g_db);
+        g_db = NULL;
+        printf("[db] 已关闭\n");
+    }
+}
+
 int db_insert_sample(double temp, double humi, int fan)
 {
     const char *sql = "INSERT INTO samples(ts, temp, humi, fan) VALUES(strftime('%s','now'), ?, ?, ?);";
