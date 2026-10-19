@@ -35,6 +35,17 @@ static void on_stop_signal(int sig)
     http_server_stop();
 }
 
+/*
+ * 网络层回调：每收到一条完整的 JSON 上报（已按花括号配对切好）就走这里。
+ * 只做一件事——推入消息队列，解析和落库交给工作线程，
+ * 保证网络线程永远不做耗时操作。
+ */
+static void on_esp_data(const char *client_ip, const char *json_obj)
+{
+    (void)client_ip;
+    msg_queue_push(&g_queue, json_obj);
+}
+
 static void print_usage(const char *prog)
 {
     printf("用法: %s [tcp端口] [http端口] [数据库文件]\n", prog);
@@ -97,7 +108,7 @@ int main(int argc, char **argv)
     printf("  按 Ctrl+C 退出\n");
 
     /* 主线程进入 epoll 事件循环，阻塞到 Ctrl+C */
-    tcp_server_run(NULL);
+    tcp_server_run(on_esp_data);
 
     /* ---- 优雅退出：按反序关停各层 ---- */
     printf("正在退出...\n");
