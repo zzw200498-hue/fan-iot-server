@@ -1,0 +1,4 @@
+build/
+*.o
+fan.db
+fan.db-*
