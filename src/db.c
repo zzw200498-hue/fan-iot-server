@@ -123,10 +123,13 @@ void db_query_recent(int n, char *out, size_t out_size)
     /* arg 布局：[0]=buf 指针, [1]=已用长度, [2]=总容量 —— 传给回调用 */
     char *arg[3];
     arg[0] = out;
-    ((size_t *)arg)[1] = 0;
     ((size_t *)arg)[2] = out_size;
 
-    snprintf(out, out_size, "{\"samples\":[");
+    /* 先写前缀 {"samples":[ ，已用长度必须记到前缀之后。
+     * 如果从 0 开始记，第一行数据会从前缀的位置开始覆盖，
+     * 输出就不是合法 JSON 了（网页表格因此一直为空） */
+    size_t prefix_len = (size_t)snprintf(out, out_size, "{\"samples\":[");
+    ((size_t *)arg)[1] = prefix_len;
 
     char *err = NULL;
     if (sqlite3_exec(g_db, sql, query_row_cb, arg, &err) != SQLITE_OK)
